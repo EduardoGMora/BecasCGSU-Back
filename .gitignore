@@ -1,0 +1,8 @@
+/supabase/.temp/
+/supabase/.branches/
+/supabase/db/dumps/
+/supabase/db/schemas/
+/supabase/functions/_data/
+/supabase/generated/
+/supabase/seed.sql
+/supabase/tests.sql
