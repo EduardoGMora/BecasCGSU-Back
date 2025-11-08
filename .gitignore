@@ -1,0 +1,20 @@
+.DS_Store
+*.pyc
+
+# --- Ignorar de FastAPI ---
+FastApi/venv/
+FastApi/__pycache__/
+FastApi/.env
+FastApi/.vscode/
+
+# --- Ignorar de Supabase ---
+supabase/supabase/.temp/
+supabase/supabase/.branches/
+supabase/supabase/db/dumps/
+supabase/supabase/db/schemas/
+supabase/supabase/functions/_data/
+supabase/supabase/generated/
+supabase/supabase/seed.sql
+supabase/supabase/tests.sql
+supabase/.vscode/
+
