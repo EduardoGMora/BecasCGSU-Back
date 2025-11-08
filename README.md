@@ -302,6 +302,8 @@ Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
 
 - **Desarrollador**: [Aldo105](https://github.com/Aldo105)
 - **Desarrollador**: [EduardoGMora](https://github.com/EduardoGMora)
+- **Desarrollador**: [Jangel21](https://github.com/Jangel21)
+- **Desarrollador**: [AlexUr27](https://github.com/AlexUr27)
 
 ## 🔄 Changelog
 
