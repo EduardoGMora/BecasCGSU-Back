@@ -1,49 +1,35 @@
 import os
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from supabase import create_client, Client
-from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware  # ¡Importante!
 
-load_dotenv()
+from database import supabase
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
-
-if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-    print("Error: Variables de entorno SUPABASE_URL o SUPABASE_ANON_KEY no encontradas.")
-
-
-try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-    print("Conectado a Supabase (modo público)")
-except Exception as e:
-    print(f"Error al conectar con Supabase: {e}")
-    supabase = None
-
-
-origins = [
-    "http://localhost",            
-    "http://localhost:3000",        
-    "http://localhost:5173",        
-    
-]
-
+import scholarships
 
 app = FastAPI(
     title="API de Becas CGSU",
-    description="API intermediaria para manejar la autenticación y lógica de negocio.",
-    version="1.0.0"
+    description="API backend para gestión de becas y autenticación.",
+    version="1.1.0"
 )
 
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://becascgsuback.vercel.app", 
+    # URL de Vercel del FRONTEND, agrégala aquí.
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,              
-    allow_credentials=True,             
-    allow_methods=["*"],                
-    allow_headers=["*"],                
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"],
 )
+
+app.include_router(scholarships.router)
 
 
 class UserCredentials(BaseModel):
@@ -52,19 +38,20 @@ class UserCredentials(BaseModel):
     password: str
 
 
-@app.get("/")
+@app.get(path= "/")
 def read_root():
-    """Endpoint raíz de bienvenida"""
-    return {"status": "success", "message": "Bienvenido a la API de Becas CGSU"}
+    return {
+        "status": "online", 
+        "message": "Bienvenido a la API de Becas CGSU. Visita /docs para ver la documentación y probar los endpoints."
+    }
 
-@app.post("/register")
+@app.post(path= "/register")
 async def register_user(credentials: UserCredentials):
     """
-    Endpoint para registrar un nuevo usuario.
-    Recibe email y password, y los pasa directamente a Supabase.
+    Registra un usuario nuevo en Supabase Auth.
     """
     if not supabase:
-        raise HTTPException(status_code=503, detail="Servicio de Supabase no disponible")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible (Revisa variables de entorno)")
 
     try:
       
@@ -75,23 +62,25 @@ async def register_user(credentials: UserCredentials):
 
         
         if response.user is None and response.session is None:
-             raise HTTPException(status_code=400, detail="No se pudo registrar al usuario. ¿Quizás ya existe?")
-
-        return {"status": "success", "message": "Usuario registrado exitosamente", "user_id": response.user.id}
+             raise HTTPException(status_code=400, detail="No se pudo registrar. Es posible que el usuario ya exista.")
+        
+        return {
+            "status": "success", 
+            "message": "Usuario registrado correctamente", 
+            "user_id": response.user.id
+        }
 
     except Exception as e:
-        
-        raise HTTPException(status_code=400, detail=f"Error al registrar: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error en el registro: {str(e)}")
 
 
-@app.post("/login")
+@app.post(path= "/login")
 async def login_user(credentials: UserCredentials):
     """
-    Endpoint para iniciar sesión.
-    Recibe email y password, los pasa a Supabase y devuelve la sesión completa.
+    Inicia sesión y devuelve el token de acceso (session).
     """
     if not supabase:
-        raise HTTPException(status_code=503, detail="Servicio de Supabase no disponible")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     try:
        
@@ -101,9 +90,8 @@ async def login_user(credentials: UserCredentials):
         })
 
         if not response.session:
-            raise HTTPException(status_code=401, detail="Email o contraseña incorrecta")
-
-
+            raise HTTPException(status_code=401, detail="Credenciales inválidas (Email o contraseña incorrectos)")
+            
         return response.session
 
     except Exception as e:
