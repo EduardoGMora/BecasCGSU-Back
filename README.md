@@ -96,10 +96,10 @@ SUPABASE_ANON_KEY="tu_supabase_anon_key"
 
 ```bash
 cd FastApi
-python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 3000
+fastapi dev .\main.py
 ```
 
-La API estará disponible en: `http://localhost:3000`
+La API estará disponible en: `http://localhost:8000`
 
 ## 📚 Documentación de la API
 
@@ -110,6 +110,7 @@ La API estará disponible en: `http://localhost:3000`
 | GET | `/` | Mensaje de bienvenida | ✅ Funcionando |
 | POST | `/register` | Registro de nuevos usuarios | ✅ Funcionando |
 | POST | `/login` | Inicio de sesión | ✅ Funcionando |
+| GET | `/scholarships` | Obtener todas las becas disponibles | ✅ Funcionando |
 
 ### 🚧 Endpoints en Desarrollo (Próximamente)
 
@@ -117,13 +118,12 @@ Los siguientes endpoints están siendo desarrollados y estarán disponibles en f
 
 | Método | Endpoint | Descripción | Estado |
 |--------|----------|-------------|---------|
-| GET | `/becas` | Obtener todas las becas disponibles | 🔄 En desarrollo |
-| GET | `/becas?categoria={categoria}` | Filtrar becas por categoría | 🔄 En desarrollo |
-| GET | `/becas?nivel={nivel}` | Filtrar becas por nivel académico | 🔄 En desarrollo |
-| GET | `/becas?monto_min={monto}&monto_max={monto}` | Filtrar becas por rango de monto | 🔄 En desarrollo |
-| GET | `/becas/{id}` | Obtener detalles de una beca específica | 🔄 En desarrollo |
-| GET | `/usuarios/{user_id}/becas` | Obtener becas aplicadas por un usuario | 🔄 En desarrollo |
-| POST | `/becas/{id}/aplicar` | Aplicar a una beca específica | 🔄 En desarrollo |
+| GET | `/scholarships?categoria={categoria}` | Filtrar becas por categoría | 🔄 En desarrollo |
+| GET | `/scholarships?nivel={nivel}` | Filtrar becas por nivel académico | 🔄 En desarrollo |
+| GET | `/scholarships?monto_min={monto}&monto_max={monto}` | Filtrar becas por rango de monto | 🔄 En desarrollo |
+| GET | `/scholarships/{id}` | Obtener detalles de una beca específica | 🔄 En desarrollo |
+| GET | `/usuarios/{user_id}/scholarships` | Obtener becas aplicadas por un usuario | 🔄 En desarrollo |
+| POST | `/scholarships/{id}/aplicar` | Aplicar a una beca específica | 🔄 En desarrollo |
 | GET | `/usuarios/{user_id}/aplicaciones` | Ver historial de aplicaciones del usuario | 🔄 En desarrollo |
 
 ### 📋 Roadmap de Funcionalidades
