@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from database import supabase
-
+import applications
 import scholarships
 
 app = FastAPI(
@@ -18,7 +18,6 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5173",
     "https://becascgsuback.vercel.app", 
-    # URL de Vercel del FRONTEND, agrégala aquí.
 ]
 
 app.add_middleware(
@@ -30,6 +29,7 @@ app.add_middleware(
 )
 
 app.include_router(scholarships.router)
+app.include_router(applications.router)
 
 
 class UserCredentials(BaseModel):
