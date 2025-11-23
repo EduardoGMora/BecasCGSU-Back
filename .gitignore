@@ -17,4 +17,5 @@ supabase/supabase/generated/
 supabase/supabase/seed.sql
 supabase/supabase/tests.sql
 supabase/.vscode/
+supabase/.env
 
