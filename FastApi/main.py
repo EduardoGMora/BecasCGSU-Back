@@ -28,8 +28,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(scholarships.router)
-app.include_router(applications.router)
+app.include_router(router= scholarships.router)
+app.include_router(router= applications.router)
 
 
 class UserCredentials(BaseModel):

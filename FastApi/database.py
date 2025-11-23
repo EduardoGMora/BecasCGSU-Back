@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
-SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY") 
+SUPABASE_URL = os.environ.get(key= "SUPABASE_URL")
+SUPABASE_ANON_KEY = os.environ.get(key= "SUPABASE_ANON_KEY")
+SUPABASE_SERVICE_KEY = os.environ.get(key= "SUPABASE_SERVICE_KEY") 
 
 supabase: Client = None
 supabase_admin: Client = None   

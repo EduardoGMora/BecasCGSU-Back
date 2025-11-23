@@ -3,7 +3,7 @@ from database import supabase
 
 router = APIRouter()
 
-@router.get("/scholarships")
+@router.get(path= "/scholarships")
 async def get_scholarships():
     """
     Obtiene todas las becas de la tabla 'scholarships'.
