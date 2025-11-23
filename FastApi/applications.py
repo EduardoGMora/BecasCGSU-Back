@@ -14,7 +14,7 @@ class ApplicationCreate(BaseModel):
 class ApplicationUpdate(BaseModel):
     scholarship_id: Optional[str] = None
 
-@router.post("/applications")
+@router.post(path= "/applications")
 async def create_application(app_data: ApplicationCreate):
     """
     Crea una nueva aplicación.
@@ -41,7 +41,7 @@ async def create_application(app_data: ApplicationCreate):
 
 
 # 2. MODIFICAR (Update)
-@router.put("/applications/{application_id}")
+@router.put(path= "/applications/{application_id}")
 async def update_application(application_id: str, app_data: ApplicationUpdate):
     """
     Modifica una aplicación existente por su ID.
@@ -75,7 +75,7 @@ async def update_application(application_id: str, app_data: ApplicationUpdate):
 
 
 # 3. ELIMINAR (Delete)
-@router.delete("/applications/{application_id}")
+@router.delete(path= "/applications/{application_id}")
 async def delete_application(application_id: str):
     """
     Elimina una aplicación por su ID.
@@ -99,7 +99,7 @@ async def delete_application(application_id: str):
         raise HTTPException(status_code=400, detail=f"Error al eliminar: {str(e)}")
 
 
-@router.get("/applications/user/{student_id}")
+@router.get(path= "/applications/user/{student_id}")
 async def get_user_applications(student_id: str):
     """
     Obtiene todas las aplicaciones de un usuario específico.
