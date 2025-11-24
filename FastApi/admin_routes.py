@@ -45,7 +45,7 @@ def verify_admin_access(profile: dict, application_university_id: str = None):
     return False 
 
 
-@router.patch("/applications/{application_id}/status")
+@router.patch(path= "/applications/{application_id}/status")
 async def update_application_status(
     application_id: int, 
     status_data: ApplicationStatusUpdate,
@@ -83,7 +83,7 @@ async def update_application_status(
 
 
 
-@router.get("/stats")
+@router.get(path= "/stats")
 async def get_stats(profile: dict = Depends(get_current_user_profile)):
     """
     Devuelve conteos de aplicaciones.
@@ -127,7 +127,7 @@ async def get_stats(profile: dict = Depends(get_current_user_profile)):
 
 
 
-@router.post("/admin/users")
+@router.post(path= "/admin/users")
 async def create_user_with_role(
     user_data: AdminUserCreate,
     profile: dict = Depends(get_current_user_profile)
@@ -157,7 +157,7 @@ async def create_user_with_role(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al crear usuario: {str(e)}")
 
-@router.get("/admin/users")
+@router.get(path= "/admin/users")
 async def list_users(profile: dict = Depends(get_current_user_profile)):
     verify_super_admin(profile)
     try:
@@ -166,7 +166,7 @@ async def list_users(profile: dict = Depends(get_current_user_profile)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.delete("/admin/users/{user_id}")
+@router.delete(path= "/admin/users/{user_id}")
 async def delete_user(user_id: str, profile: dict = Depends(get_current_user_profile)):
     verify_super_admin(profile)
     try:
