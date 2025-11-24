@@ -1,4 +1,3 @@
-import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -42,14 +41,14 @@ class UserCredentials(BaseModel):
     password: str
 
 
-@app.get("/")
+@app.get(path= "/")
 def read_root():
     return {
         "status": "online", 
         "message": "Bienvenido a la API de Becas CGSU. Visita /docs para ver la documentación y probar los endpoints."
     }
 
-@app.post("/register")
+@app.post(path= "/register")
 async def register_user(credentials: UserCredentials):
     """
     Registra un usuario nuevo en Supabase Auth.
@@ -78,7 +77,7 @@ async def register_user(credentials: UserCredentials):
         raise HTTPException(status_code=400, detail=f"Error en el registro: {str(e)}")
 
 
-@app.post("/login")
+@app.post(path= "/login")
 async def login_user(credentials: UserCredentials):
     """
     Inicia sesión y devuelve el token de acceso (session).

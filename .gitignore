@@ -3,6 +3,7 @@
 
 # --- Ignorar de FastAPI ---
 FastApi/venv/
+FastApi/.venv/
 FastApi/__pycache__/
 FastApi/.env
 FastApi/.vscode/
