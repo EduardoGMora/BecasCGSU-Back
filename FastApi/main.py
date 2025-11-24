@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from database import supabase
 import applications
 import scholarships
+import admin_routes
 
 app = FastAPI(
     title="API de Becas CGSU",
@@ -27,8 +28,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router= scholarships.router)
-app.include_router(router= applications.router)
+app.include_router(scholarships.router)
+app.include_router(applications.router)
+app.include_router(admin_routes.router)
+
+
 
 
 class UserCredentials(BaseModel):
