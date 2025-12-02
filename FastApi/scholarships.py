@@ -12,17 +12,23 @@ async def get_scholarships(
     search: Optional[str] = Query(None, description="Search in title and description"),
     limit: Optional[int] = Query(100, ge=1, le=1000, description="Maximum number of results (1-1000)"),
     offset: Optional[int] = Query(0, ge=0, description="Number of results to skip for pagination")
-):
+) -> dict:
     """
-    Obtiene becas con filtros opcionales del lado del servidor para mejor rendimiento.
+    Get scholarships with optional server-side filters for better performance.
     
-    Parámetros de consulta:
-    - status: Filtrar por estado (ej. 'Abierta', 'Cerrada')
-    - university_center_id: Filtrar por ID de centro universitario
-    - scholarship_type_id: Filtrar por ID de tipo de beca
-    - search: Buscar en título y descripción
-    - limit: Número máximo de resultados (1-1000, default: 100)
-    - offset: Número de resultados a omitir para paginación (default: 0)
+    Query parameters:
+    - status: Filter by status (e.g., 'Abierta', 'Cerrada')
+    - university_center_id: Filter by university center ID
+    - scholarship_type_id: Filter by scholarship type ID
+    - search: Search in title and description
+    - limit: Maximum number of results (1-1000, default: 100)
+    - offset: Number of results to skip for pagination (default: 0)
+
+    Returns:
+        A dictionary with the status, data, count of returned items, total items, limit, and offset.
+
+    Raises:
+        HTTPException: If there is an error fetching data from the database.
     """
     if not supabase:
         raise HTTPException(status_code=503, detail="Servicio de base de datos no disponible")
@@ -65,19 +71,50 @@ async def get_scholarships(
         raise HTTPException(status_code=500, detail=f"Error interno al obtener becas: {str(e)}")
 
 @router.get(path="/scholarship-types")
-async def get_scholarship_types():
-    """Get all scholarship types for filter dropdown"""
+async def get_scholarship_types() -> dict:
+    """
+    Get all scholarship types for filter dropdown
+
+    Returns a list of scholarship types with their IDs and names.
+
+    Returns:
+        A dictionary with the status and data containing scholarship types.
+
+    Raises:
+        HTTPException: If there is an error fetching data from the database.
+
+    """
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Servicio de base de datos no disponible")
+
     try:
         response = supabase.table('scholarship_types').select('id, name').execute()
         return {"status": "success", "data": response.data}
     except Exception as e:
+        print(f"Error al obtener tipos de beca: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get(path="/university-centers")
-async def get_university_centers():
-    """Get all university centers for filter dropdown"""
+async def get_university_centers() -> dict:
+    """
+    Get all university centers for filter dropdown
+
+    Returns a list of university centers with their IDs and names.
+
+    Returns:
+        A dictionary with the status and data containing university centers.
+
+    Raises:
+        HTTPException: If there is an error fetching data from the database.
+    """
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Servicio de base de datos no disponible")
+
     try:
         response = supabase.table('university_centers').select('id, name').execute()
         return {"status": "success", "data": response.data}
     except Exception as e:
+        print(f"Error al obtener centros universitarios: {e}")
         raise HTTPException(status_code=500, detail=str(e))
