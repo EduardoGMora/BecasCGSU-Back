@@ -63,3 +63,21 @@ async def get_scholarships(
     except Exception as e:
         print(f"Error al obtener becas: {e}")
         raise HTTPException(status_code=500, detail=f"Error interno al obtener becas: {str(e)}")
+
+@router.get(path="/scholarship-types")
+async def get_scholarship_types():
+    """Get all scholarship types for filter dropdown"""
+    try:
+        response = supabase.table('scholarship_types').select('id, name').execute()
+        return {"status": "success", "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get(path="/university-centers")
+async def get_university_centers():
+    """Get all university centers for filter dropdown"""
+    try:
+        response = supabase.table('university_centers').select('id, name').execute()
+        return {"status": "success", "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
