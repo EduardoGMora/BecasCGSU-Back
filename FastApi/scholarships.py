@@ -1,8 +1,41 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
-from database import supabase  
+from database import supabase
+import re
 
 router = APIRouter()
+
+
+def sanitize_search_term(search_term: str) -> str:
+    """
+    Sanitize search term to prevent SQL injection by escaping special characters.
+    
+    Args:
+        search_term: The raw search string from user input
+        
+    Returns:
+        Sanitized search term safe for use in ILIKE queries
+    """
+    if not search_term:
+        return ""
+    
+    # Escape special characters that have meaning in ILIKE patterns
+    # % = wildcard for any characters
+    # _ = wildcard for single character
+    # \ = escape character
+    sanitized = search_term.replace('\\', '\\\\')  # Escape backslashes first
+    sanitized = sanitized.replace('%', '\\%')      # Escape percent signs
+    sanitized = sanitized.replace('_', '\\_')      # Escape underscores
+    
+    # Remove any null bytes
+    sanitized = sanitized.replace('\x00', '')
+    
+    # Limit length to prevent DoS
+    max_length = 100
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+    
+    return sanitized.strip()
 
 @router.get(path= "/scholarships")
 async def get_scholarships(
@@ -47,9 +80,12 @@ async def get_scholarships(
         if scholarship_type_id:
             query = query.eq('scholarship_type_id', scholarship_type_id)
         
-        # Search in title and description using OR condition
+        # Search in title and description using OR condition with sanitized input
         if search:
-            query = query.or_(f'title.ilike.%{search}%,description.ilike.%{search}%')
+            sanitized_search = sanitize_search_term(search)
+            
+            if sanitized_search:
+                query = query.or_(f'title.ilike.%{sanitized_search}%,description.ilike.%{sanitized_search}%')
         
         # Apply pagination
         query = query.range(offset, offset + limit - 1)
