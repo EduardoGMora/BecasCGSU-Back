@@ -17,7 +17,10 @@ if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     supabase = None
 else:
     try:
+        # Initialize regular client with anon key (for public operations)
+        supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
         
+        # Initialize admin client with service key (for admin operations)
         if SUPABASE_SERVICE_KEY:
             supabase_admin = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
         else:
@@ -25,3 +28,5 @@ else:
             
     except Exception as e:
         print(f"Error al conectar con Supabase: {e}")
+        supabase = None
+        supabase_admin = None
