@@ -35,7 +35,8 @@ async def create_application(app_data: ApplicationCreate):
         
         return {"status": "success", "message": "Aplicación creada", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al crear: {str(e)}")
+        print(f"Error creating application: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al crear aplicación")
 
 
 # 2. MODIFICAR (Update)
@@ -51,7 +52,8 @@ async def update_application(application_id: str, app_data: ApplicationUpdate):
         if not response.data: raise HTTPException(status_code=404, detail="No encontrada")
         return {"status": "success", "message": "Actualizado", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error updating application: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al actualizar aplicación")
 
 
 # 3. ELIMINAR (Delete)
@@ -64,7 +66,8 @@ async def delete_application(application_id: str):
         if not response.data: raise HTTPException(status_code=404, detail="No encontrada")
         return {"status": "success", "message": "Eliminado", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error deleting application: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al eliminar aplicación")
 
 
 # 4. LEER CON ROLES (Get Inteligente Adaptado)
