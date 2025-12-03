@@ -110,4 +110,5 @@ async def get_applications(profile: dict = Depends(get_current_user_profile)):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error fetching applications: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
