@@ -11,8 +11,6 @@ SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 supabase: Client = None
 supabase_admin: Client = None
 
-
-
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     print("ERROR CRÍTICO: Faltan variables de entorno URL o ANON KEY.")
 else:
