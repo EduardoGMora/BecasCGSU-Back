@@ -40,8 +40,6 @@ def verify_admin_access(profile: dict, application_university_id: str = None):
     return False 
 
 # --- RUTAS ---
-
-# 1. GESTIÓN DE APLICACIONES (Corrección: application_id es str/UUID)
 @router.patch(path= "/applications/{application_id}/status")
 async def update_application_status(
     application_id: str,  # <--- ¡ESTO FUE LO QUE CORREGIMOS! (Antes decía int)
@@ -80,7 +78,7 @@ async def update_application_status(
         print(f"Error updating application status: {str(e)}")
         raise HTTPException(status_code=400, detail="Error al actualizar estado")
 
-# 2. DASHBOARD
+
 @router.get(path= "/stats")
 async def get_stats(profile: dict = Depends(get_current_user_profile)):
     if profile.get('role') not in ['admin', 'campus_admin']:
@@ -154,7 +152,7 @@ async def get_stats(profile: dict = Depends(get_current_user_profile)):
         print(f"Error fetching stats: {str(e)}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
-# 3. CRUD USUARIOS
+
 @router.post(path= "/admin/users")
 async def create_user_with_role(
     user_data: AdminUserCreate,
@@ -186,6 +184,7 @@ async def create_user_with_role(
     except Exception as e:
         print(f"User creation error: {str(e)}")  # Log internally
         raise HTTPException(status_code=400, detail="Error al crear usuario")
+
     
 @router.get(path="/admin/users")
 async def list_users(profile: dict = Depends(get_current_user_profile)):
