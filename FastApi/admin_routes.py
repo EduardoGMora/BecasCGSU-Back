@@ -77,7 +77,8 @@ async def update_application_status(
         response = supabase_admin.table('applications').update({"status": status_data.status}).eq('id', application_id).execute()
         return {"status": "success", "message": f"Estado actualizado a {status_data.status}", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error updating application status: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al actualizar estado")
 
 # 2. DASHBOARD
 @router.get(path= "/stats")
@@ -104,7 +105,8 @@ async def get_stats(profile: dict = Depends(get_current_user_profile)):
             "stats": {"total": total, "accepted": accepted, "rejected": rejected, "pending": pending}
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error fetching stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 # 3. CRUD USUARIOS
 @router.post(path= "/admin/users")
@@ -146,7 +148,8 @@ async def list_users(profile: dict = Depends(get_current_user_profile)):
         response = supabase_admin.table('profiles').select('*').execute()
         return {"status": "success", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error listing users: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al listar usuarios")
 
 @router.delete(path= "/admin/users/{user_id}")
 async def delete_user(user_id: str, profile: dict = Depends(get_current_user_profile)):
@@ -156,7 +159,8 @@ async def delete_user(user_id: str, profile: dict = Depends(get_current_user_pro
         supabase_admin.table('profiles').delete().eq('id', user_id).execute()
         return {"status": "success", "message": "Usuario eliminado"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error deleting user: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al eliminar usuario")
 
 @router.put(path= "/admin/users/{user_id}")
 async def update_user_role(
@@ -173,4 +177,5 @@ async def update_user_role(
         if not response.data: raise HTTPException(status_code=404, detail="Usuario no encontrado")
         return {"status": "success", "message": "Actualizado", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error updating user: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al actualizar usuario")
