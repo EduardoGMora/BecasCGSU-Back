@@ -45,7 +45,8 @@ async def create_scholarship(scholarship: ScholarshipCreate):
         response = supabase_admin.table('scholarships').insert(data).execute()
         return {"status": "success", "message": "Beca creada", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al crear: {str(e)}")
+        print(f"Error creating scholarship: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al crear beca")
 
 # 2. ACTUALIZAR BECA (Update) - Admin
 @router.put(path= "/scholarships/{scholarship_id}")
@@ -72,7 +73,8 @@ async def update_scholarship(scholarship_id: str, scholarship: ScholarshipUpdate
             raise HTTPException(status_code=404, detail="Beca no encontrada")
         return {"status": "success", "message": "Beca actualizada", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error updating scholarship: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al actualizar beca")
 
 # 3. ELIMINAR BECA (Delete) - Admin
 @router.delete(path= "/scholarships/{scholarship_id}")
@@ -87,4 +89,5 @@ async def delete_scholarship(scholarship_id: str):
             raise HTTPException(status_code=404, detail="Beca no encontrada (ya eliminada?)")
         return {"status": "success", "message": "Beca eliminada", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error deleting scholarship: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al eliminar beca")
