@@ -8,6 +8,7 @@ FastApi/__pycache__/
 FastApi/.env
 FastApi/.vscode/
 
+
 # --- Ignorar de Supabase ---
 supabase/supabase/.temp/
 supabase/supabase/.branches/
@@ -18,5 +19,5 @@ supabase/supabase/generated/
 supabase/supabase/seed.sql
 supabase/supabase/tests.sql
 supabase/.vscode/
-supabase/.env
+
 
