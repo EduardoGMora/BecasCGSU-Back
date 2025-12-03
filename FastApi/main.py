@@ -6,7 +6,7 @@ from database import supabase
 import applications
 import scholarships
 import admin_routes
-import scholarshipsCRUD
+import scholarships_crud
 
 app = FastAPI(
     title="API de Becas CGSU",
@@ -32,7 +32,7 @@ app.add_middleware(
 app.include_router(scholarships.router)
 app.include_router(applications.router)
 app.include_router(admin_routes.router)
-app.include_router(scholarshipsCRUD.router)
+app.include_router(scholarships_crud.router)
 
 
 
