@@ -20,7 +20,7 @@ class ApplicationUpdate(BaseModel):
 # --- RUTAS ---
 
 # 1. AGREGAR (Create)
-@router.post("/applications")
+@router.post(path= "/applications")
 async def create_application(app_data: ApplicationCreate):
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="BD no disponible")
@@ -39,7 +39,7 @@ async def create_application(app_data: ApplicationCreate):
 
 
 # 2. MODIFICAR (Update)
-@router.put("/applications/{application_id}")
+@router.put(path="/applications/{application_id}")
 async def update_application(application_id: str, app_data: ApplicationUpdate):
     if not supabase_admin: raise HTTPException(status_code=503, detail="BD no disponible")
 
@@ -55,7 +55,7 @@ async def update_application(application_id: str, app_data: ApplicationUpdate):
 
 
 # 3. ELIMINAR (Delete)
-@router.delete("/applications/{application_id}")
+@router.delete(path="/applications/{application_id}")
 async def delete_application(application_id: str):
     if not supabase_admin: raise HTTPException(status_code=503, detail="BD no disponible")
 
@@ -68,7 +68,7 @@ async def delete_application(application_id: str):
 
 
 # 4. LEER CON ROLES (Get Inteligente Adaptado)
-@router.get("/applications") 
+@router.get(path="/applications") 
 async def get_applications(profile: dict = Depends(get_current_user_profile)):
     if not supabase_admin: raise HTTPException(status_code=503, detail="BD no disponible")
 
