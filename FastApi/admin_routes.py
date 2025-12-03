@@ -87,23 +87,69 @@ async def get_stats(profile: dict = Depends(get_current_user_profile)):
         raise HTTPException(status_code=403, detail="Acceso denegado")
     
     try:
-        # Consulta simplificada. Si university_id no está en applications, 
-        # el filtro por campus requeriría un join más complejo o filtrar en Python.
-        # Por ahora traemos todo y contamos.
-        query = supabase_admin.table('applications').select('status')
+        role = profile.get('role')
+        campus = profile.get('campus')
+        
+        # For campus_admin, we need to filter by their assigned campus
+        # We join with scholarships to get the university_center_id
+        if role == 'campus_admin':
+            if not campus:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Tu usuario es Admin de Sede pero no tiene campus asignado"
+                )
+            
+            # Query applications with scholarship join to filter by campus
+            query = supabase_admin.table('applications')\
+                .select('status, scholarships(university_center_id)')\
+                .eq('scholarships.university_center_id', campus)
+        else:
+            # Super admin sees all applications
+            query = supabase_admin.table('applications').select('status, scholarships(university_center_id)')
         
         response = query.execute()
         data = response.data
         
+        # Count statistics
         total = len(data)
         accepted = len([x for x in data if x['status'] == 'accepted'])
         rejected = len([x for x in data if x['status'] == 'rejected'])
         pending = len([x for x in data if x['status'] == 'pending'])
         
+        # For super admin, also provide breakdown by campus
+        stats = {
+            "total": total,
+            "accepted": accepted,
+            "rejected": rejected,
+            "pending": pending
+        }
+        
+        if role == 'admin':
+            # Group by campus for super admin
+            by_campus = {}
+            for item in data:
+                scholarship_data = item.get('scholarships')
+                campus_id = None
+                
+                if isinstance(scholarship_data, dict):
+                    campus_id = scholarship_data.get('university_center_id')
+                elif isinstance(scholarship_data, list) and scholarship_data:
+                    campus_id = scholarship_data[0].get('university_center_id')
+                
+                campus_key = campus_id or 'Sin asignar'
+                by_campus[campus_key] = by_campus.get(campus_key, 0) + 1
+            
+            stats["by_campus"] = by_campus
+        
         return {
             "status": "success",
-            "stats": {"total": total, "accepted": accepted, "rejected": rejected, "pending": pending}
+            "stats": stats,
+            "role": role,
+            "filtered_campus": campus if role == 'campus_admin' else None
         }
+        
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error fetching stats: {str(e)}")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
