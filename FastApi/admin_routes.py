@@ -6,6 +6,8 @@ from typing import Optional, List
 
 router = APIRouter()
 
+# --- MODELOS DE DATOS ---
+
 class ApplicationStatusUpdate(BaseModel):
     status: str 
 
@@ -14,117 +16,141 @@ class AdminUserCreate(BaseModel):
     password: str
     role: str
     campus: str = None 
+    full_name: str = "Administrador"
+    student_code: str = "ADMIN" # Valor dummy
 
 class AdminUserUpdate(BaseModel):
     role: Optional[str] = None
     campus: Optional[str] = None
 
-
+# --- DEPENDENCIAS DE SEGURIDAD ---
 
 def verify_super_admin(profile: dict):
-    """Verifica que el usuario tenga el rol 'admin'."""
     if profile.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Acceso denegado: Se requieren permisos de Super Admin")
 
 def verify_admin_access(profile: dict, application_university_id: str = None):
-    """
-    Verifica si el usuario tiene permiso para gestionar una aplicación específica.
-    """
     role = profile.get('role')
     campus = profile.get('campus')
 
-    if role == 'admin':
-        return True 
-    
+    if role == 'admin': return True 
     if role == 'campus_admin':
-        if not application_university_id:
-             return False
-        if campus == application_university_id:
-            return True
-            
+        if not application_university_id: return False
+        if campus == application_university_id: return True
     return False 
 
-
+# --- RUTAS ---
 @router.patch(path= "/applications/{application_id}/status")
 async def update_application_status(
-    application_id: int, 
+    application_id: str,  # <--- ¡ESTO FUE LO QUE CORREGIMOS! (Antes decía int)
     status_data: ApplicationStatusUpdate,
     profile: dict = Depends(get_current_user_profile)
 ):
-    """
-    Cambia el estado de una aplicación.
-    Solo permitido para admins.
-    """
-    if not supabase_admin:
-        raise HTTPException(status_code=503, detail="BD no disponible")
-
+    if not supabase_admin: raise HTTPException(status_code=503, detail="BD no disponible")
     if status_data.status not in ['pending', 'accepted', 'rejected']:
-        raise HTTPException(status_code=400, detail="Estado inválido. Use: pending, accepted, rejected")
+        raise HTTPException(status_code=400, detail="Estado inválido")
 
     try:
-        app_response = supabase_admin.table('applications').select('university_id').eq('id', application_id).single().execute()
+        # Obtenemos la app y la beca relacionada para ver el campus
+        # Nota: Ajusta la query según tu estructura real. 
+        # Si university_id ya no existe en applications, lo sacamos de scholarships.
+        app_res = supabase_admin.table('applications')\
+            .select('*, scholarships(university_center_id)')\
+            .eq('id', application_id)\
+            .single().execute()
         
-        if not app_response.data:
-            raise HTTPException(status_code=404, detail="Aplicación no encontrada")
-            
-        app_campus = app_response.data.get('university_id')
+        if not app_res.data: raise HTTPException(status_code=404, detail="App no encontrada")
+        
+        # Lógica para obtener campus desde la beca relacionada
+        scholarship_data = app_res.data.get('scholarships')
+        app_campus = None
+        if isinstance(scholarship_data, dict):
+            app_campus = scholarship_data.get('university_center_id')
+        elif isinstance(scholarship_data, list) and scholarship_data:
+            app_campus = scholarship_data[0].get('university_center_id')
 
         if not verify_admin_access(profile, app_campus):
-            raise HTTPException(status_code=403, detail="No tienes permiso para gestionar esta aplicación")
+            raise HTTPException(status_code=403, detail="Sin permiso")
 
-        response = supabase_admin.table('applications').update({
-            "status": status_data.status
-        }).eq('id', application_id).execute()
-
-        return {"status": "success", "message": f"Aplicación {status_data.status}", "data": response.data}
-
+        response = supabase_admin.table('applications').update({"status": status_data.status}).eq('id', application_id).execute()
+        return {"status": "success", "message": f"Estado actualizado a {status_data.status}", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
+        print(f"Error updating application status: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al actualizar estado")
 
 
 @router.get(path= "/stats")
 async def get_stats(profile: dict = Depends(get_current_user_profile)):
-    """
-    Devuelve conteos de aplicaciones.
-    """
     if profile.get('role') not in ['admin', 'campus_admin']:
         raise HTTPException(status_code=403, detail="Acceso denegado")
-
+    
     try:
-        query = supabase_admin.table('applications').select('status, university_id')
+        role = profile.get('role')
+        campus = profile.get('campus')
         
-        if profile.get('role') == 'campus_admin':
-            query = query.eq('university_id', profile.get('campus'))
+        # For campus_admin, we need to filter by their assigned campus
+        # We join with scholarships to get the university_center_id
+        if role == 'campus_admin':
+            if not campus:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Tu usuario es Admin de Sede pero no tiene campus asignado"
+                )
             
+            # Query applications with scholarship join to filter by campus
+            query = supabase_admin.table('applications')\
+                .select('status, scholarships(university_center_id)')\
+                .eq('scholarships.university_center_id', campus)
+        else:
+            # Super admin sees all applications
+            query = supabase_admin.table('applications').select('status, scholarships(university_center_id)')
+        
         response = query.execute()
         data = response.data
         
+        # Count statistics
         total = len(data)
         accepted = len([x for x in data if x['status'] == 'accepted'])
         rejected = len([x for x in data if x['status'] == 'rejected'])
         pending = len([x for x in data if x['status'] == 'pending'])
         
-        by_campus = {}
-        if profile.get('role') == 'admin':
+        # For super admin, also provide breakdown by campus
+        stats = {
+            "total": total,
+            "accepted": accepted,
+            "rejected": rejected,
+            "pending": pending
+        }
+        
+        if role == 'admin':
+            # Group by campus for super admin
+            by_campus = {}
             for item in data:
-                camp = item.get('university_id', 'Desconocido')
-                by_campus[camp] = by_campus.get(camp, 0) + 1
-
+                scholarship_data = item.get('scholarships')
+                campus_id = None
+                
+                if isinstance(scholarship_data, dict):
+                    campus_id = scholarship_data.get('university_center_id')
+                elif isinstance(scholarship_data, list) and scholarship_data:
+                    campus_id = scholarship_data[0].get('university_center_id')
+                
+                campus_key = campus_id or 'Sin asignar'
+                by_campus[campus_key] = by_campus.get(campus_key, 0) + 1
+            
+            stats["by_campus"] = by_campus
+        
         return {
             "status": "success",
-            "stats": {
-                "total_applications": total,
-                "accepted": accepted,
-                "rejected": rejected,
-                "pending": pending,
-                "by_campus": by_campus
-            }
+            "stats": stats,
+            "role": role,
+            "filtered_campus": campus if role == 'campus_admin' else None
         }
-
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        print(f"Error fetching stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post(path= "/admin/users")
@@ -133,9 +159,7 @@ async def create_user_with_role(
     profile: dict = Depends(get_current_user_profile)
 ):
     verify_super_admin(profile) 
-
-    if not supabase_admin:
-        raise HTTPException(status_code=503, detail="BD no disponible")
+    if not supabase_admin: raise HTTPException(status_code=503, detail="BD no disponible")
 
     try:
         auth_response = supabase_admin.auth.admin.create_user({
@@ -147,6 +171,9 @@ async def create_user_with_role(
 
         profile_data = {
             "id": new_user_id,
+            "email": user_data.email,
+            "full_name": user_data.full_name,
+            "student_code": user_data.student_code,
             "role": user_data.role,
             "campus": user_data.campus if user_data.role == 'campus_admin' else None
         }
@@ -155,16 +182,19 @@ async def create_user_with_role(
         return {"status": "success", "message": f"Usuario creado: {user_data.email}", "user_id": new_user_id}
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al crear usuario: {str(e)}")
+        print(f"User creation error: {str(e)}")  # Log internally
+        raise HTTPException(status_code=400, detail="Error al crear usuario")
 
-@router.get(path= "/admin/users")
+    
+@router.get(path="/admin/users")
 async def list_users(profile: dict = Depends(get_current_user_profile)):
     verify_super_admin(profile)
     try:
         response = supabase_admin.table('profiles').select('*').execute()
         return {"status": "success", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error listing users: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al listar usuarios")
 
 @router.delete(path= "/admin/users/{user_id}")
 async def delete_user(user_id: str, profile: dict = Depends(get_current_user_profile)):
@@ -174,4 +204,23 @@ async def delete_user(user_id: str, profile: dict = Depends(get_current_user_pro
         supabase_admin.table('profiles').delete().eq('id', user_id).execute()
         return {"status": "success", "message": "Usuario eliminado"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error deleting user: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al eliminar usuario")
+
+@router.put(path= "/admin/users/{user_id}")
+async def update_user_role(
+    user_id: str,
+    update_data: AdminUserUpdate,
+    profile: dict = Depends(get_current_user_profile)
+):
+    verify_super_admin(profile)
+    data_to_update = {k: v for k, v in update_data.dict().items() if v is not None}
+    if not data_to_update: raise HTTPException(status_code=400, detail="Sin datos")
+
+    try:
+        response = supabase_admin.table('profiles').update(data_to_update).eq('id', user_id).execute()
+        if not response.data: raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        return {"status": "success", "message": "Actualizado", "data": response.data}
+    except Exception as e:
+        print(f"Error updating user: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al actualizar usuario")

@@ -23,4 +23,5 @@ async def get_current_user_profile(authorization: str = Header(None)):
         return profile_response.data
 
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Token inválido o expirado: {str(e)}")
+        print(f"Authentication error: {str(e)}")
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")

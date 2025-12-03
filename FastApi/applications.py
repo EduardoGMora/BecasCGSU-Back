@@ -1,123 +1,117 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 from database import supabase_admin
 from auth_utils import get_current_user_profile 
 
 router = APIRouter()
 
+# --- MODELOS DE DATOS ---
 
 class ApplicationCreate(BaseModel):
-    user_id: str
-    scholarship_id: str 
-    university_id: str 
+    student_id: str      # Coincide con tu tabla y script
+    scholarship_id: str  # UUID de la beca
+    # university_id ELIMINADO (ya no existe en la tabla)
 
 class ApplicationUpdate(BaseModel):
     scholarship_id: Optional[str] = None
-    university_id: Optional[str] = None
+    # status: Lo maneja el admin
 
+# --- RUTAS ---
 
+# 1. AGREGAR (Create)
 @router.post(path= "/applications")
 async def create_application(app_data: ApplicationCreate):
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     try:
+        # Insertamos con los nombres nuevos de columnas
         response = supabase_admin.table('applications').insert({
-            "user_id": app_data.user_id,
+            "student_id": app_data.student_id,
             "scholarship_id": app_data.scholarship_id,
-            "university_id": app_data.university_id,
             "status": "pending"
         }).execute()
         
-        return {"status": "success", "message": "Aplicación creada", "data": response.data}
+        return {"status": "success", "message": "Aplicación creada correctamente", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al crear: {str(e)}")
+        print(f"Error creating application: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al crear aplicación")
 
 
 # 2. MODIFICAR (Update)
-@router.put("/applications/{application_id}")
+@router.put(path="/applications/{application_id}")
 async def update_application(application_id: str, app_data: ApplicationUpdate):
-    """
-    Modifica una aplicación existente por su ID.
-    Solo actualiza los campos que se envíen .
-    """
-    if not supabase_admin:
-        raise HTTPException(status_code=503, detail="Base de datos no disponible")
+    if not supabase_admin: raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     update_data = {k: v for k, v in app_data.dict().items() if v is not None}
-
-    if not update_data:
-        raise HTTPException(status_code=400, detail="Sin datos para actualizar")
+    if not update_data: raise HTTPException(status_code=400, detail="No hay datos para actualizar")
 
     try:
         response = supabase_admin.table('applications').update(update_data).eq('id', application_id).execute()
-        if not response.data:
-            raise HTTPException(status_code=404, detail="Aplicación no encontrada")
+        if not response.data: raise HTTPException(status_code=404, detail="Aplicación no encontrada")
         return {"status": "success", "message": "Actualizado", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error updating application: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al actualizar aplicación")
 
 
 # 3. ELIMINAR (Delete)
-@router.delete("/applications/{application_id}")
+@router.delete(path="/applications/{application_id}")
 async def delete_application(application_id: str):
-    """
-    Elimina una aplicación por su ID.
-    """
-    if not supabase_admin:
-        raise HTTPException(status_code=503, detail="Base de datos no disponible")
+    if not supabase_admin: raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     try:
         response = supabase_admin.table('applications').delete().eq('id', application_id).execute()
-        if not response.data:
-             raise HTTPException(status_code=404, detail="Aplicación no encontrada")
-        return {"status": "success", "message": "Eliminado", "data": response.data}
+        if not response.data: raise HTTPException(status_code=404, detail="Aplicación no encontrada")
+        return {"status": "success", "message": "Aplicación eliminada correctamente", "data": response.data}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error deleting application: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error al eliminar aplicación")
 
 
+# 4. LEER CON ROLES (Get Inteligente Adaptado)
+@router.get(path="/applications") 
+async def get_applications(profile: dict = Depends(get_current_user_profile)):
+    if not supabase_admin: raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
-@router.get("/applications/user/{student_id}")
-async def get_user_applications(student_id: str):
-    """
-    Obtiene todas las aplicaciones de un usuario específico.
-    Incluye los datos de la beca relacionada.
-    """
-    if not supabase_admin:
-        raise HTTPException(status_code=503, detail="BD no disponible")
-
-    
-    role = profile.get('role', 'user')     
-    campus = profile.get('campus')         
-    user_id = profile.get('id')           
-
-    print(f"DEBUG: Usuario {user_id} solicitando datos. Rol: {role}. Campus: {campus}")
+    role = profile.get('role', 'user')
+    campus = profile.get('campus')
+    user_id = profile.get('id')
 
     try:
+        # Hacemos JOIN con scholarships para saber de qué centro es la beca
         query = supabase_admin.table('applications').select('*, scholarships(*)')
+
         if role == 'admin':
-            pass 
+            pass # Ve todo
 
         elif role == 'campus_admin':
-            if not campus:
-                raise HTTPException(status_code=403, detail="Tu usuario es Admin de Sede pero no tiene campus asignado en su perfil.")
-        
-            query = query.eq('university_id', campus)
+            if not campus: raise HTTPException(status_code=403, detail="Admin sin campus asignado")
+            # Filtrado manual en Python al final
+            pass 
 
         else:
-            query = query.eq('user_id', user_id)
+            # Usuario Normal: Filtramos por student_id
+            query = query.eq('student_id', user_id)
 
         response = query.execute()
-        
+        data = response.data
+
+        # Filtrado manual para Campus Admin
+        if role == 'campus_admin':
+            data = [
+                app for app in data 
+                if app.get('scholarships') and app['scholarships'].get('university_center_id') == campus
+            ]
+
         return {
             "status": "success",
             "role_detected": role,
-            "campus_filter": campus if role == 'campus_admin' else "N/A",
-            "count": len(response.data),
-            "data": response.data
+            "count": len(data),
+            "data": data
         }
 
     except Exception as e:
-        print(f"Error al obtener aplicaciones: {e}")
-        raise HTTPException(status_code=500, detail="Error interno del servidor al obtener aplicaciones")
+        print(f"Error fetching applications: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
