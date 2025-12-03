@@ -17,13 +17,8 @@ if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     print("ERROR CRÍTICO: Faltan variables de entorno URL o ANON KEY.")
 else:
     try:
-<<<<<<< HEAD
         supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
         print("✅ Cliente Público conectado.")
-=======
-        # Initialize regular client with anon key (for public operations)
-        supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
->>>>>>> bd8f88f8aa7a9e14f562fc42817506308760205b
         
         # Initialize admin client with service key (for admin operations)
         if SUPABASE_SERVICE_KEY:
@@ -33,12 +28,6 @@ else:
             print("ADVERTENCIA: No se encontró SERVICE_KEY. Las funciones de escritura fallarán.")
             
     except Exception as e:
-<<<<<<< HEAD
-        print(f" Error al conectar con Supabase: {e}")
-
-print("---------------------------------------")
-=======
         print(f"Error al conectar con Supabase: {e}")
         supabase = None
         supabase_admin = None
->>>>>>> bd8f88f8aa7a9e14f562fc42817506308760205b
