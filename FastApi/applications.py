@@ -23,7 +23,7 @@ class ApplicationUpdate(BaseModel):
 @router.post(path= "/applications")
 async def create_application(app_data: ApplicationCreate):
     if not supabase_admin:
-        raise HTTPException(status_code=503, detail="BD no disponible")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     try:
         # Insertamos con los nombres nuevos de columnas
@@ -33,7 +33,7 @@ async def create_application(app_data: ApplicationCreate):
             "status": "pending"
         }).execute()
         
-        return {"status": "success", "message": "Aplicación creada", "data": response.data}
+        return {"status": "success", "message": "Aplicación creada correctamente", "data": response.data}
     except Exception as e:
         print(f"Error creating application: {str(e)}")
         raise HTTPException(status_code=400, detail="Error al crear aplicación")
@@ -42,14 +42,14 @@ async def create_application(app_data: ApplicationCreate):
 # 2. MODIFICAR (Update)
 @router.put(path="/applications/{application_id}")
 async def update_application(application_id: str, app_data: ApplicationUpdate):
-    if not supabase_admin: raise HTTPException(status_code=503, detail="BD no disponible")
+    if not supabase_admin: raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     update_data = {k: v for k, v in app_data.dict().items() if v is not None}
-    if not update_data: raise HTTPException(status_code=400, detail="Sin datos")
+    if not update_data: raise HTTPException(status_code=400, detail="No hay datos para actualizar")
 
     try:
         response = supabase_admin.table('applications').update(update_data).eq('id', application_id).execute()
-        if not response.data: raise HTTPException(status_code=404, detail="No encontrada")
+        if not response.data: raise HTTPException(status_code=404, detail="Aplicación no encontrada")
         return {"status": "success", "message": "Actualizado", "data": response.data}
     except Exception as e:
         print(f"Error updating application: {str(e)}")
@@ -59,12 +59,12 @@ async def update_application(application_id: str, app_data: ApplicationUpdate):
 # 3. ELIMINAR (Delete)
 @router.delete(path="/applications/{application_id}")
 async def delete_application(application_id: str):
-    if not supabase_admin: raise HTTPException(status_code=503, detail="BD no disponible")
+    if not supabase_admin: raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     try:
         response = supabase_admin.table('applications').delete().eq('id', application_id).execute()
-        if not response.data: raise HTTPException(status_code=404, detail="No encontrada")
-        return {"status": "success", "message": "Eliminado", "data": response.data}
+        if not response.data: raise HTTPException(status_code=404, detail="Aplicación no encontrada")
+        return {"status": "success", "message": "Aplicación eliminada correctamente", "data": response.data}
     except Exception as e:
         print(f"Error deleting application: {str(e)}")
         raise HTTPException(status_code=400, detail="Error al eliminar aplicación")
@@ -73,7 +73,7 @@ async def delete_application(application_id: str):
 # 4. LEER CON ROLES (Get Inteligente Adaptado)
 @router.get(path="/applications") 
 async def get_applications(profile: dict = Depends(get_current_user_profile)):
-    if not supabase_admin: raise HTTPException(status_code=503, detail="BD no disponible")
+    if not supabase_admin: raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     role = profile.get('role', 'user')
     campus = profile.get('campus')
