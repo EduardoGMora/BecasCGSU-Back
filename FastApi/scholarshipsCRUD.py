@@ -30,7 +30,7 @@ class ScholarshipUpdate(BaseModel):
 
 # --- RUTAS DEL CRUD ---
 # 1. CREAR BECA (Create) - Admin
-@router.post("/scholarships")
+@router.post(path= "/scholarships")
 async def create_scholarship(scholarship: ScholarshipCreate):
     """Crea una nueva beca."""
     if not supabase_admin:
@@ -48,7 +48,7 @@ async def create_scholarship(scholarship: ScholarshipCreate):
         raise HTTPException(status_code=400, detail=f"Error al crear: {str(e)}")
 
 # 2. ACTUALIZAR BECA (Update) - Admin
-@router.put("/scholarships/{scholarship_id}")
+@router.put(path= "/scholarships/{scholarship_id}")
 async def update_scholarship(scholarship_id: str, scholarship: ScholarshipUpdate):
     """Actualiza una beca existente."""
     if not supabase_admin:
@@ -75,7 +75,7 @@ async def update_scholarship(scholarship_id: str, scholarship: ScholarshipUpdate
         raise HTTPException(status_code=400, detail=str(e))
 
 # 3. ELIMINAR BECA (Delete) - Admin
-@router.delete("/scholarships/{scholarship_id}")
+@router.delete(path= "/scholarships/{scholarship_id}")
 async def delete_scholarship(scholarship_id: str):
     """Elimina una beca."""
     if not supabase_admin:

@@ -42,7 +42,7 @@ def verify_admin_access(profile: dict, application_university_id: str = None):
 # --- RUTAS ---
 
 # 1. GESTIÓN DE APLICACIONES (Corrección: application_id es str/UUID)
-@router.patch("/applications/{application_id}/status")
+@router.patch(path= "/applications/{application_id}/status")
 async def update_application_status(
     application_id: str,  # <--- ¡ESTO FUE LO QUE CORREGIMOS! (Antes decía int)
     status_data: ApplicationStatusUpdate,
@@ -80,7 +80,7 @@ async def update_application_status(
         raise HTTPException(status_code=400, detail=str(e))
 
 # 2. DASHBOARD
-@router.get("/stats")
+@router.get(path= "/stats")
 async def get_stats(profile: dict = Depends(get_current_user_profile)):
     if profile.get('role') not in ['admin', 'campus_admin']:
         raise HTTPException(status_code=403, detail="Acceso denegado")
@@ -107,7 +107,7 @@ async def get_stats(profile: dict = Depends(get_current_user_profile)):
         raise HTTPException(status_code=500, detail=str(e))
 
 # 3. CRUD USUARIOS
-@router.post("/admin/users")
+@router.post(path= "/admin/users")
 async def create_user_with_role(
     user_data: AdminUserCreate,
     profile: dict = Depends(get_current_user_profile)
@@ -136,9 +136,10 @@ async def create_user_with_role(
         return {"status": "success", "message": f"Usuario creado: {user_data.email}", "user_id": new_user_id}
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al crear usuario: {str(e)}")
-
-@router.get("/admin/users")
+        print(f"User creation error: {str(e)}")  # Log internally
+        raise HTTPException(status_code=400, detail="Error al crear usuario")
+    
+@router.get(path="/admin/users")
 async def list_users(profile: dict = Depends(get_current_user_profile)):
     verify_super_admin(profile)
     try:
@@ -147,7 +148,7 @@ async def list_users(profile: dict = Depends(get_current_user_profile)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.delete("/admin/users/{user_id}")
+@router.delete(path= "/admin/users/{user_id}")
 async def delete_user(user_id: str, profile: dict = Depends(get_current_user_profile)):
     verify_super_admin(profile)
     try:
@@ -157,7 +158,7 @@ async def delete_user(user_id: str, profile: dict = Depends(get_current_user_pro
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.put("/admin/users/{user_id}")
+@router.put(path= "/admin/users/{user_id}")
 async def update_user_role(
     user_id: str,
     update_data: AdminUserUpdate,
