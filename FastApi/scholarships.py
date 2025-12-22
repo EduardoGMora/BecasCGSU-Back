@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
-from database import supabase
+from database import supabase, supabase_admin 
 import re
 
 router = APIRouter()
@@ -63,33 +63,42 @@ async def get_scholarships(
     Raises:
         HTTPException: If there is an error fetching data from the database.
     """
-    if not supabase:
+    if not supabase_admin:
         raise HTTPException(status_code=503, detail="Servicio de base de datos no disponible")
 
     try:
-        # Start building the query
-        query = supabase.table('scholarships').select('*', count='exact')
-        
+
+        # Start building the query 
+        query = supabase_admin.table("scholarships").select(
+            """
+            *,
+            university_centers ( acronym ),
+            scholarship_types ( name )
+            """,
+            count="exact"
+        )
+
         # Apply server-side filters
         if status:
-            query = query.eq('status', status)
-        
+            query = query.eq("status", status)
+
         if university_center_id:
-            query = query.eq('university_center_id', university_center_id)
-        
+            query = query.eq("university_center_id", university_center_id)
+
         if scholarship_type_id:
-            query = query.eq('scholarship_type_id', scholarship_type_id)
-        
+            query = query.eq("scholarship_type_id", scholarship_type_id)
+
         # Search in title and description using OR condition with sanitized input
         if search:
             sanitized_search = sanitize_search_term(search)
-            
             if sanitized_search:
-                query = query.or_(f'title.ilike.%{sanitized_search}%,description.ilike.%{sanitized_search}%')
-        
+                query = query.or_(
+                    f"title.ilike.%{sanitized_search}%,description.ilike.%{sanitized_search}%"
+                )
+
         # Apply pagination
         query = query.range(offset, offset + limit - 1)
-        
+
         # Execute query
         response = query.execute()
         

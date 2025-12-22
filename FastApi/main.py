@@ -7,6 +7,9 @@ import applications
 import scholarships
 import admin_routes
 import scholarships_crud
+import users
+import permissions
+import user_permissions
 
 app = FastAPI(
     title="API de Becas CGSU",
@@ -29,11 +32,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(scholarships.router)
-app.include_router(applications.router)
-app.include_router(admin_routes.router)
-app.include_router(scholarships_crud.router)
-
+app.include_router(router= scholarships.router)
+app.include_router(router= applications.router)
+app.include_router(router= users.router)
+app.include_router(router= permissions.router)
+app.include_router(router= user_permissions.router)
 
 
 class UserCredentials(BaseModel):
