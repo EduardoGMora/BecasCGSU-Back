@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from database import supabase  
+from database import supabase_admin 
 
 router = APIRouter()
 
@@ -8,11 +8,19 @@ async def get_scholarships():
     """
     Obtiene todas las becas de la tabla 'scholarships'.
     """
-    if not supabase:
+    if not supabase_admin:
         raise HTTPException(status_code=503, detail="Servicio de base de datos no disponible")
 
     try:
-        response = supabase.table('scholarships').select('*').execute()
+        response = supabase_admin.table('scholarships').select("""
+            *,
+            university_centers (
+                acronym
+            ), 
+            scholarship_types(
+                name
+            )                                                   
+            """).execute()
         
         return {
             "status": "success",
