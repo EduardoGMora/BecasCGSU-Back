@@ -46,7 +46,13 @@ async def get_user_permissions_by_user(user_id: str):
         raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     try:
-        response = supabase_admin.table('user_permissions').select('*').eq('user_id', user_id).execute()
+        response = supabase_admin.table('user_permissions').select(
+            """*,
+             permissions (
+                nombre
+            )
+            """
+            ).eq('user_id', user_id).execute()
         if not response.data:
             raise HTTPException(status_code=404, detail="No se encontraron permisos para este usuario")
         return {

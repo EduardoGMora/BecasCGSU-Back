@@ -12,7 +12,7 @@ class UserCreate(BaseModel):
     nombre: str
     email: str
     codigo: str
-    password_hash: str
+    password: str
     role: str
 
 
@@ -103,14 +103,14 @@ async def create_user(user: UserCreate):
             "nombre": user.nombre,
             "email": user.email,
             "codigo": user.codigo,
-            "password_hash": user.password_hash,
+            "password_hash": user.password,
             "role": user.role
         }).execute()
 
         return {
             "status": "success",
             "message": "Usuario creado correctamente",
-            "data": response.data
+            "data": response.data[0]
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al crear usuario: {str(e)}")
