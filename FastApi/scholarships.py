@@ -3,7 +3,7 @@ from typing import Optional
 from database import supabase, supabase_admin 
 import re
 
-router = APIRouter()
+router = APIRouter(prefix="/scholarships", tags=["Scholarships"])
 
 
 def sanitize_search_term(search_term: str) -> str:

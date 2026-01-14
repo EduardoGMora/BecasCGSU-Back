@@ -3,7 +3,8 @@ from pydantic import BaseModel
 from typing import Optional
 from database import supabase_admin
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["Users"])
+
 class LoginRequest(BaseModel):
     codigo: str
     password: str
@@ -65,7 +66,7 @@ async def get_user(user_id: str):
         raise HTTPException(status_code=500, detail=f"Error al obtener usuario: {str(e)}")
 
 # POST - Login user
-@router.post(path="/loginUser")
+@router.post(path="/users/loginUser")
 def login(data: LoginRequest):
     response = supabase_admin.table("users") \
         .select("id, codigo, password_hash, role") \

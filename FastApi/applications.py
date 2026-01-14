@@ -4,7 +4,7 @@ from typing import Optional
 from database import supabase_admin
 from auth_utils import get_current_user_profile 
 
-router = APIRouter()
+router = APIRouter(prefix="/applications", tags=["Applications"])
 
 # --- MODELOS DE DATOS ---
 

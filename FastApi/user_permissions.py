@@ -3,8 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 from database import supabase_admin
 
-router = APIRouter()
-
+router = APIRouter(prefix="/user-permissions", tags=["Users Permissions"])
 
 class UserPermissionCreate(BaseModel):
     user_id: str

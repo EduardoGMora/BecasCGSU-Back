@@ -14,6 +14,15 @@ import user_permissions
 app = FastAPI(
     title="API de Becas CGSU",
     description="API backend para gestión de becas y autenticación.",
+    openapi_tags=[
+        {"name": "Health", "description": "Estado del servicio"},
+        {"name": "Auth", "description": "Registro e inicio de sesión"},
+        {"name": "Users", "description": "Operaciones de usuarios"},
+        {"name": "Permissions", "description": "Gestión de permisos"},
+        {"name": "Users Permissions", "description": "Gestión de permisos de usuarios"},
+        {"name": "Scholarships", "description": "Gestión de becas"},
+        {"name": "Applications", "description": "Gestión de aplicaciones a becas"},
+        ],
     version="1.1.0"
 )
 
@@ -45,14 +54,14 @@ class UserCredentials(BaseModel):
     password: str
 
 
-@app.get(path= "/")
+@app.get("/", tags=["Health"])
 def read_root():
     return {
         "status": "online", 
         "message": "Bienvenido a la API de Becas CGSU. Visita /docs para ver la documentación y probar los endpoints."
     }
 
-@app.post(path= "/register")
+@app.post("/register", tags=["Auth"])
 async def register_user(credentials: UserCredentials):
     """
     Registra un usuario nuevo en Supabase Auth.
@@ -81,7 +90,7 @@ async def register_user(credentials: UserCredentials):
         raise HTTPException(status_code=400, detail=f"Error en el registro: {str(e)}")
 
 
-@app.post(path= "/login")
+@app.post("/login", tags=["Auth"])
 async def login_user(credentials: UserCredentials):
     """
     Inicia sesión y devuelve el token de acceso (session).

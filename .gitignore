@@ -7,6 +7,8 @@ FastApi/.venv/
 FastApi/__pycache__/
 FastApi/.env
 FastApi/.vscode/
+FastAPI/tests/__pycache__/
+FastAPI/.pytest_cache/
 
 
 # --- Ignorar de Supabase ---
