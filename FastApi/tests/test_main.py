@@ -6,8 +6,24 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import main
+from security_jwt import create_access_token
 
 client = TestClient(main.app)
+
+# Helper function to create admin token for tests
+def get_admin_token():
+    """Create a valid admin token for testing protected endpoints"""
+    return create_access_token({
+        "sub": "admin-test-123",
+        "email": "admin@test.com",
+        "role": "admin"
+    })
+
+# Helper function to get auth headers
+def get_admin_headers():
+    """Get authorization headers with admin token"""
+    token = get_admin_token()
+    return {"Authorization": f"Bearer {token}"}
 
 
 # ===================== HELPER CLASSES =====================
@@ -150,7 +166,7 @@ def test_get_all_users(monkeypatch):
 
     monkeypatch.setattr("users.supabase_admin", FakeSupabase())
 
-    response = client.get("/users/users")
+    response = client.get("/users/users", headers=get_admin_headers())
     assert response.status_code == 200
     assert response.json()["status"] == "success"
     assert len(response.json()["data"]) == 2
@@ -223,13 +239,15 @@ def test_create_user(monkeypatch):
 
     monkeypatch.setattr("users.supabase_admin", FakeSupabase())
 
-    response = client.post("/users/users", json={
-        "nombre": "Nuevo Usuario",
-        "email": "nuevo@example.com",
-        "codigo": "2024001",
-        "password": "securePass123",
-        "role": "user"
-    })
+    response = client.post("/users/users",
+        headers=get_admin_headers(),
+        json={
+            "nombre": "Nuevo Usuario",
+            "email": "nuevo@example.com",
+            "codigo": "2024001",
+            "password": "securePass123",
+            "role": "user"
+        })
 
     assert response.status_code == 200
     assert response.json()["status"] == "success"
@@ -253,9 +271,9 @@ def test_update_user(monkeypatch):
 
     monkeypatch.setattr("users.supabase_admin", FakeSupabase())
 
-    response = client.put("/users/users/user-123", json={
-        "nombre": "Updated Name"
-    })
+    response = client.put("/users/users/user-123",
+        headers=get_admin_headers(),
+        json={"nombre": "Updated Name"})
 
     assert response.status_code == 200
     assert response.json()["status"] == "success"
@@ -277,7 +295,7 @@ def test_delete_user(monkeypatch):
 
     monkeypatch.setattr("users.supabase_admin", FakeSupabase())
 
-    response = client.delete("/users/users/user-123")
+    response = client.delete("/users/users/user-123", headers=get_admin_headers())
     assert response.status_code == 200
     assert response.json()["status"] == "success"
 
@@ -587,9 +605,9 @@ def test_create_permission(monkeypatch):
 
     monkeypatch.setattr("permissions.supabase_admin", FakeSupabase())
 
-    response = client.post("/permissions/permissions", json={
-        "nombre": "new_permission"
-    })
+    response = client.post("/permissions/permissions",
+        headers=get_admin_headers(),
+        json={"nombre": "new_permission"})
 
     assert response.status_code == 200
     assert response.json()["status"] == "success"
@@ -613,9 +631,9 @@ def test_update_permission(monkeypatch):
 
     monkeypatch.setattr("permissions.supabase_admin", FakeSupabase())
 
-    response = client.put("/permissions/permissions/perm-123", json={
-        "nombre": "updated_permission"
-    })
+    response = client.put("/permissions/permissions/perm-123",
+        headers=get_admin_headers(),
+        json={"nombre": "updated_permission"})
 
     assert response.status_code == 200
     assert response.json()["status"] == "success"
@@ -637,7 +655,7 @@ def test_delete_permission(monkeypatch):
 
     monkeypatch.setattr("permissions.supabase_admin", FakeSupabase())
 
-    response = client.delete("/permissions/permissions/perm-123")
+    response = client.delete("/permissions/permissions/perm-123", headers=get_admin_headers())
     assert response.status_code == 200
     assert response.json()["status"] == "success"
 
@@ -772,7 +790,7 @@ def test_database_unavailable_error(monkeypatch):
     """Test handling when database is unavailable"""
     monkeypatch.setattr("users.supabase_admin", None)
 
-    response = client.get("/users/users")
+    response = client.get("/users/users", headers=get_admin_headers())
     assert response.status_code == 503
 
 
@@ -788,8 +806,10 @@ def test_invalid_json_payload():
 
 def test_missing_required_fields():
     """Test handling of missing required fields"""
-    response = client.post("/users/users", json={
-        "nombre": "Test User"
-        # Missing required fields: email, codigo, password, role
-    })
+    response = client.post("/users/users",
+        headers=get_admin_headers(),
+        json={
+            "nombre": "Test User"
+            # Missing required fields: email, codigo, password, role
+        })
     assert response.status_code == 422

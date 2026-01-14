@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from database import supabase_admin
+from security_jwt import get_current_user, require_admin, require_admin_or_campus_admin, TokenData
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -24,11 +25,13 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
 
 
-# GET - Get all users
+# GET - Get all users (Protected - Admin only)
 @router.get(path="/users")
-async def get_users():
+async def get_users(current_user: TokenData = Depends(require_admin)):
     """
     Obtiene todos los usuarios de la tabla 'users'.
+
+    Requiere autenticación y rol de administrador.
     """
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Base de datos no disponible")
@@ -90,11 +93,13 @@ def login(data: LoginRequest):
         }
     }
 
-# POST - Create user
+# POST - Create user (Protected - Admin only)
 @router.post(path="/users")
-async def create_user(user: UserCreate):
+async def create_user(user: UserCreate, current_user: TokenData = Depends(require_admin)):
     """
     Crea un nuevo usuario.
+
+    Requiere autenticación y rol de administrador.
     """
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Base de datos no disponible (Falta Service Key)")
@@ -117,11 +122,13 @@ async def create_user(user: UserCreate):
         raise HTTPException(status_code=400, detail=f"Error al crear usuario: {str(e)}")
 
 
-# PUT - Update user
+# PUT - Update user (Protected - Admin only)
 @router.put(path="/users/{user_id}")
-async def update_user(user_id: str, user: UserUpdate):
+async def update_user(user_id: str, user: UserUpdate, current_user: TokenData = Depends(require_admin)):
     """
     Actualiza un usuario existente por su ID.
+
+    Requiere autenticación y rol de administrador.
     """
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Base de datos no disponible")
@@ -146,11 +153,13 @@ async def update_user(user_id: str, user: UserUpdate):
         raise HTTPException(status_code=400, detail=f"Error al actualizar: {str(e)}")
 
 
-# DELETE - Delete user
+# DELETE - Delete user (Protected - Admin only)
 @router.delete(path="/users/{user_id}")
-async def delete_user(user_id: str):
+async def delete_user(user_id: str, current_user: TokenData = Depends(require_admin)):
     """
     Elimina un usuario por su ID.
+
+    Requiere autenticación y rol de administrador.
     """
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Base de datos no disponible")

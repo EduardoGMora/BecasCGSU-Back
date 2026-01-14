@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from database import supabase_admin
+from security_jwt import require_admin, TokenData
 
 router = APIRouter(prefix="/permissions", tags=["Permissions"])
 
@@ -55,11 +56,13 @@ async def get_permission(permission_id: str):
         raise HTTPException(status_code=500, detail=f"Error al obtener permiso: {str(e)}")
 
 
-# POST - Create permission
+# POST - Create permission (Protected - Admin only)
 @router.post(path="/permissions")
-async def create_permission(permission: PermissionCreate):
+async def create_permission(permission: PermissionCreate, current_user: TokenData = Depends(require_admin)):
     """
     Crea un nuevo permiso.
+
+    Requiere autenticación y rol de administrador.
     """
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Base de datos no disponible (Falta Service Key)")
@@ -78,11 +81,13 @@ async def create_permission(permission: PermissionCreate):
         raise HTTPException(status_code=400, detail=f"Error al crear permiso: {str(e)}")
 
 
-# PUT - Update permission
+# PUT - Update permission (Protected - Admin only)
 @router.put(path="/permissions/{permission_id}")
-async def update_permission(permission_id: str, permission: PermissionUpdate):
+async def update_permission(permission_id: str, permission: PermissionUpdate, current_user: TokenData = Depends(require_admin)):
     """
     Actualiza un permiso existente por su ID.
+
+    Requiere autenticación y rol de administrador.
     """
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Base de datos no disponible")
@@ -107,11 +112,13 @@ async def update_permission(permission_id: str, permission: PermissionUpdate):
         raise HTTPException(status_code=400, detail=f"Error al actualizar: {str(e)}")
 
 
-# DELETE - Delete permission
+# DELETE - Delete permission (Protected - Admin only)
 @router.delete(path="/permissions/{permission_id}")
-async def delete_permission(permission_id: str):
+async def delete_permission(permission_id: str, current_user: TokenData = Depends(require_admin)):
     """
     Elimina un permiso por su ID.
+
+    Requiere autenticación y rol de administrador.
     """
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Base de datos no disponible")
