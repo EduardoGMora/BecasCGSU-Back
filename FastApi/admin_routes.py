@@ -8,8 +8,7 @@ router = APIRouter()
 
 # --- MODELOS DE DATOS ---
 
-class ApplicationStatusUpdate(BaseModel):
-    status: str 
+
 
 class AdminUserCreate(BaseModel):
     email: EmailStr
@@ -29,128 +28,10 @@ def verify_super_admin(profile: dict):
     if profile.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Acceso denegado: Se requieren permisos de Super Admin")
 
-def verify_admin_access(profile: dict, application_university_id: str = None):
-    role = profile.get('role')
-    campus = profile.get('campus')
 
-    if role == 'admin': return True 
-    if role == 'campus_admin':
-        if not application_university_id: return False
-        if campus == application_university_id: return True
-    return False 
 
 # --- RUTAS ---
-@router.patch(path= "/applications/{application_id}/status")
-async def update_application_status(
-    application_id: str,  # <--- ¡ESTO FUE LO QUE CORREGIMOS! (Antes decía int)
-    status_data: ApplicationStatusUpdate,
-    profile: dict = Depends(get_current_user_profile)
-):
-    if not supabase_admin: raise HTTPException(status_code=503, detail="BD no disponible")
-    if status_data.status not in ['pending', 'accepted', 'rejected']:
-        raise HTTPException(status_code=400, detail="Estado inválido")
 
-    try:
-        # Obtenemos la app y la beca relacionada para ver el campus
-        # Nota: Ajusta la query según tu estructura real. 
-        # Si university_id ya no existe en applications, lo sacamos de scholarships.
-        app_res = supabase_admin.table('applications')\
-            .select('*, scholarships(university_center_id)')\
-            .eq('id', application_id)\
-            .single().execute()
-        
-        if not app_res.data: raise HTTPException(status_code=404, detail="App no encontrada")
-        
-        # Lógica para obtener campus desde la beca relacionada
-        scholarship_data = app_res.data.get('scholarships')
-        app_campus = None
-        if isinstance(scholarship_data, dict):
-            app_campus = scholarship_data.get('university_center_id')
-        elif isinstance(scholarship_data, list) and scholarship_data:
-            app_campus = scholarship_data[0].get('university_center_id')
-
-        if not verify_admin_access(profile, app_campus):
-            raise HTTPException(status_code=403, detail="Sin permiso")
-
-        response = supabase_admin.table('applications').update({"status": status_data.status}).eq('id', application_id).execute()
-        return {"status": "success", "message": f"Estado actualizado a {status_data.status}", "data": response.data}
-    except Exception as e:
-        print(f"Error updating application status: {str(e)}")
-        raise HTTPException(status_code=400, detail="Error al actualizar estado")
-
-
-@router.get(path= "/stats")
-async def get_stats(profile: dict = Depends(get_current_user_profile)):
-    if profile.get('role') not in ['admin', 'campus_admin']:
-        raise HTTPException(status_code=403, detail="Acceso denegado")
-    
-    try:
-        role = profile.get('role')
-        campus = profile.get('campus')
-        
-        # For campus_admin, we need to filter by their assigned campus
-        # We join with scholarships to get the university_center_id
-        if role == 'campus_admin':
-            if not campus:
-                raise HTTPException(
-                    status_code=403, 
-                    detail="Tu usuario es Admin de Sede pero no tiene campus asignado"
-                )
-            
-            # Query applications with scholarship join to filter by campus
-            query = supabase_admin.table('applications')\
-                .select('status, scholarships(university_center_id)')\
-                .eq('scholarships.university_center_id', campus)
-        else:
-            # Super admin sees all applications
-            query = supabase_admin.table('applications').select('status, scholarships(university_center_id)')
-        
-        response = query.execute()
-        data = response.data
-        
-        # Count statistics
-        total = len(data)
-        accepted = len([x for x in data if x['status'] == 'accepted'])
-        rejected = len([x for x in data if x['status'] == 'rejected'])
-        pending = len([x for x in data if x['status'] == 'pending'])
-        
-        # For super admin, also provide breakdown by campus
-        stats = {
-            "total": total,
-            "accepted": accepted,
-            "rejected": rejected,
-            "pending": pending
-        }
-        
-        if role == 'admin':
-            # Group by campus for super admin
-            by_campus = {}
-            for item in data:
-                scholarship_data = item.get('scholarships')
-                campus_id = None
-                
-                if isinstance(scholarship_data, dict):
-                    campus_id = scholarship_data.get('university_center_id')
-                elif isinstance(scholarship_data, list) and scholarship_data:
-                    campus_id = scholarship_data[0].get('university_center_id')
-                
-                campus_key = campus_id or 'Sin asignar'
-                by_campus[campus_key] = by_campus.get(campus_key, 0) + 1
-            
-            stats["by_campus"] = by_campus
-        
-        return {
-            "status": "success",
-            "stats": stats,
-            "role": role,
-            "filtered_campus": campus if role == 'campus_admin' else None
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error fetching stats: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post(path= "/admin/users")

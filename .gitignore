@@ -20,4 +20,6 @@ supabase/supabase/seed.sql
 supabase/supabase/tests.sql
 supabase/.vscode/
 
-
+# --- Otros ---
+.ss/
+package-lock.json
