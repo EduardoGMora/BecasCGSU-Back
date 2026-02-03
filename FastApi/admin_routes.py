@@ -3,6 +3,15 @@ from database import supabase_admin
 from auth_utils import get_current_user_profile
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
+from validators import (
+    validate_password,
+    validate_user_role,
+    validate_campus_for_role,
+    validate_full_name,
+    validate_uuid,
+    ValidationError,
+    VALID_USER_ROLES
+)
 
 router = APIRouter()
 
@@ -158,8 +167,22 @@ async def create_user_with_role(
     user_data: AdminUserCreate,
     profile: dict = Depends(get_current_user_profile)
 ):
-    verify_super_admin(profile) 
+    verify_super_admin(profile)
     if not supabase_admin: raise HTTPException(status_code=503, detail="BD no disponible")
+
+    # Validar inputs
+    try:
+        validate_password(user_data.password)
+        validate_user_role(user_data.role)
+        validate_full_name(user_data.full_name)
+
+        # Validar campus si es campus_admin
+        if user_data.role == 'campus_admin':
+            if not user_data.campus:
+                raise ValidationError("campus", "El campus es requerido para el rol campus_admin")
+            validate_uuid(user_data.campus, "campus")
+    except ValidationError:
+        raise
 
     try:
         auth_response = supabase_admin.auth.admin.create_user({
@@ -181,6 +204,8 @@ async def create_user_with_role(
 
         return {"status": "success", "message": f"Usuario creado: {user_data.email}", "user_id": new_user_id}
 
+    except ValidationError:
+        raise
     except Exception as e:
         print(f"User creation error: {str(e)}")  # Log internally
         raise HTTPException(status_code=400, detail="Error al crear usuario")
@@ -199,10 +224,16 @@ async def list_users(profile: dict = Depends(get_current_user_profile)):
 @router.delete(path= "/admin/users/{user_id}")
 async def delete_user(user_id: str, profile: dict = Depends(get_current_user_profile)):
     verify_super_admin(profile)
+
+    # Validar user_id
+    validate_uuid(user_id, "user_id")
+
     try:
         supabase_admin.auth.admin.delete_user(user_id)
         supabase_admin.table('profiles').delete().eq('id', user_id).execute()
         return {"status": "success", "message": "Usuario eliminado"}
+    except ValidationError:
+        raise
     except Exception as e:
         print(f"Error deleting user: {str(e)}")
         raise HTTPException(status_code=400, detail="Error al eliminar usuario")
@@ -214,6 +245,20 @@ async def update_user_role(
     profile: dict = Depends(get_current_user_profile)
 ):
     verify_super_admin(profile)
+
+    # Validar user_id
+    validate_uuid(user_id, "user_id")
+
+    # Validar campos si se proporcionan
+    if update_data.role:
+        validate_user_role(update_data.role)
+        # Si se cambia a campus_admin, validar que se proporcione campus
+        if update_data.role == 'campus_admin' and not update_data.campus:
+            raise ValidationError("campus", "El campus es requerido para el rol campus_admin")
+
+    if update_data.campus:
+        validate_uuid(update_data.campus, "campus")
+
     data_to_update = {k: v for k, v in update_data.dict().items() if v is not None}
     if not data_to_update: raise HTTPException(status_code=400, detail="Sin datos")
 
@@ -221,6 +266,8 @@ async def update_user_role(
         response = supabase_admin.table('profiles').update(data_to_update).eq('id', user_id).execute()
         if not response.data: raise HTTPException(status_code=404, detail="Usuario no encontrado")
         return {"status": "success", "message": "Actualizado", "data": response.data}
+    except ValidationError:
+        raise
     except Exception as e:
         print(f"Error updating user: {str(e)}")
         raise HTTPException(status_code=400, detail="Error al actualizar usuario")

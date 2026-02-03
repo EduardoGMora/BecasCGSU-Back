@@ -1,9 +1,19 @@
 from fastapi import APIRouter, HTTPException, Body, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from database import supabase, supabase_admin # Usamos admin para escribir
 from auth_utils import get_current_user_profile
+from validators import (
+    validate_scholarship_title,
+    validate_scholarship_description,
+    validate_scholarship_dates,
+    validate_scholarship_status,
+    validate_scholarship_requirements,
+    validate_uuid,
+    ValidationError,
+    VALID_SCHOLARSHIP_STATUSES
+)
 
 router = APIRouter()
 
@@ -82,12 +92,24 @@ async def create_scholarship(
 ):
     """Crea una nueva beca. Requiere permisos de admin o campus_admin."""
     verify_admin_or_campus_admin(profile)
-    
+
     # Verificar que campus_admin solo cree becas de su campus
     verify_campus_ownership(profile, scholarship.university_center_id)
-    
+
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Falta Service Key para escritura")
+
+    # Validar inputs
+    try:
+        validate_scholarship_title(scholarship.title)
+        validate_scholarship_description(scholarship.description)
+        validate_uuid(scholarship.university_center_id, "university_center_id")
+        validate_uuid(scholarship.scholarship_type_id, "scholarship_type_id")
+        validate_scholarship_dates(scholarship.application_start_date, scholarship.application_end_date)
+        validate_scholarship_status(scholarship.status)
+        validate_scholarship_requirements(scholarship.requirements)
+    except ValidationError:
+        raise
 
     try:
         # Convertimos el modelo a diccionario y las fechas a string ISO
@@ -112,33 +134,61 @@ async def update_scholarship(
 ):
     """Actualiza una beca existente. Requiere permisos de admin o campus_admin."""
     verify_admin_or_campus_admin(profile)
-    
+
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Falta Service Key")
+
+    # Validar scholarship_id
+    validate_uuid(scholarship_id, "scholarship_id")
+
+    # Validar campos si se proporcionan
+    if scholarship.title:
+        validate_scholarship_title(scholarship.title)
+    if scholarship.description:
+        validate_scholarship_description(scholarship.description)
+    if scholarship.university_center_id:
+        validate_uuid(scholarship.university_center_id, "university_center_id")
+    if scholarship.scholarship_type_id:
+        validate_uuid(scholarship.scholarship_type_id, "scholarship_type_id")
+    if scholarship.status:
+        validate_scholarship_status(scholarship.status)
+    if scholarship.requirements is not None:
+        validate_scholarship_requirements(scholarship.requirements)
 
     try:
         # Primero verificar que la beca existe y obtener su campus
         existing = supabase_admin.table('scholarships')\
-            .select('university_center_id')\
+            .select('university_center_id, application_start_date, application_end_date')\
             .eq('id', scholarship_id)\
             .single()\
             .execute()
-        
+
         if not existing.data:
             raise HTTPException(status_code=404, detail="Beca no encontrada")
-        
+
         # Verificar permisos de campus
         verify_campus_ownership(profile, existing.data['university_center_id'])
-        
+
         # Si se está cambiando el campus, verificar permisos para el nuevo campus
         if scholarship.university_center_id:
             verify_campus_ownership(profile, scholarship.university_center_id)
 
         # Filtramos campos vacíos
         update_data = {k: v for k, v in scholarship.dict().items() if v is not None}
-        
+
         if not update_data:
             raise HTTPException(status_code=400, detail="No se enviaron datos")
+
+        # Validar fechas si se proporcionan
+        start_date = scholarship.application_start_date or existing.data.get('application_start_date')
+        end_date = scholarship.application_end_date or existing.data.get('application_end_date')
+        if scholarship.application_start_date or scholarship.application_end_date:
+            # Convertir strings a datetime si es necesario para validación
+            if isinstance(start_date, str):
+                start_date = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            if isinstance(end_date, str):
+                end_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+            validate_scholarship_dates(start_date, end_date)
 
         # Serializar fechas si existen
         if 'application_start_date' in update_data:
@@ -150,8 +200,10 @@ async def update_scholarship(
         if not response.data:
             raise HTTPException(status_code=404, detail="Beca no encontrada")
         return {"status": "success", "message": "Beca actualizada", "data": response.data}
-        
+
     except HTTPException:
+        raise
+    except ValidationError:
         raise
     except Exception as e:
         print(f"Error updating scholarship: {str(e)}")
@@ -165,7 +217,10 @@ async def delete_scholarship(
 ):
     """Elimina una beca. Requiere permisos de admin o campus_admin."""
     verify_admin_or_campus_admin(profile)
-    
+
+    # Validar scholarship_id
+    validate_uuid(scholarship_id, "scholarship_id")
+
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Falta Service Key")
 
@@ -176,19 +231,21 @@ async def delete_scholarship(
             .eq('id', scholarship_id)\
             .single()\
             .execute()
-        
+
         if not existing.data:
             raise HTTPException(status_code=404, detail="Beca no encontrada")
-        
+
         # Verificar permisos de campus
         verify_campus_ownership(profile, existing.data['university_center_id'])
-        
+
         response = supabase_admin.table('scholarships').delete().eq('id', scholarship_id).execute()
         if not response.data:
             raise HTTPException(status_code=404, detail="Beca no encontrada (ya eliminada?)")
         return {"status": "success", "message": "Beca eliminada", "data": response.data}
-        
+
     except HTTPException:
+        raise
+    except ValidationError:
         raise
     except Exception as e:
         print(f"Error deleting scholarship: {str(e)}")

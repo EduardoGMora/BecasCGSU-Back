@@ -15,6 +15,7 @@ import applications
 import scholarships
 import admin_routes
 import scholarships_crud
+import scholarships_scraping
 import users
 import permissions
 import user_permissions
@@ -29,6 +30,7 @@ app = FastAPI(
         {"name": "Permissions", "description": "Gestión de permisos"},
         {"name": "Users Permissions", "description": "Gestión de permisos de usuarios"},
         {"name": "Scholarships", "description": "Gestión de becas"},
+        {"name": "Scraping", "description": "Scraping y actualización de becas externas"},
         {"name": "Applications", "description": "Gestión de aplicaciones a becas"},
         ],
     version="1.1.0"
@@ -54,6 +56,9 @@ app.include_router(router= applications.router)
 app.include_router(router= users.router)
 app.include_router(router= permissions.router)
 app.include_router(router= user_permissions.router)
+app.include_router(router= scholarships_scraping.router)
+app.include_router(router= admin_routes.router)
+app.include_router(router= scholarships_crud.router)
 
 
 class UserCredentials(BaseModel):
