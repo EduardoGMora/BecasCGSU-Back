@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from database import supabase
-import applications
 import scholarships
 import users
 import permissions
 import user_permissions
+import admin_routes
+import scholarships_crud
 
 app = FastAPI(
     title="API de Becas CGSU",
@@ -31,10 +32,12 @@ app.add_middleware(
 )
 
 app.include_router(router= scholarships.router)
-app.include_router(router= applications.router)
 app.include_router(router= users.router)
 app.include_router(router= permissions.router)
 app.include_router(router= user_permissions.router)
+app.include_router(router= admin_routes.router)
+app.include_router(router= scholarships_crud.router)
+
 
 
 class UserCredentials(BaseModel):

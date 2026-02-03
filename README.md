@@ -36,8 +36,6 @@ Este proyecto está en **desarrollo activo**. Actualmente cuenta con funcionalid
 - **API Privada**: Implementación de autenticación JWT y endpoints protegidos
 - **Gestión de Becas**: Endpoints para crear, leer, actualizar y eliminar becas
 - **Sistema de Filtros**: Búsqueda de becas por categoría, monto, nivel académico
-- **Aplicaciones**: Sistema para que usuarios puedan aplicar a becas
-- **Historial**: Tracking de aplicaciones por usuario
 
 ### 📅 Próximamente:
 - Panel de administración
@@ -122,9 +120,6 @@ Los siguientes endpoints están siendo desarrollados y estarán disponibles en f
 | GET | `/scholarships?nivel={nivel}` | Filtrar becas por nivel académico | 🔄 En desarrollo |
 | GET | `/scholarships?monto_min={monto}&monto_max={monto}` | Filtrar becas por rango de monto | 🔄 En desarrollo |
 | GET | `/scholarships/{id}` | Obtener detalles de una beca específica | 🔄 En desarrollo |
-| GET | `/usuarios/{user_id}/scholarships` | Obtener becas aplicadas por un usuario | 🔄 En desarrollo |
-| POST | `/scholarships/{id}/aplicar` | Aplicar a una beca específica | 🔄 En desarrollo |
-| GET | `/usuarios/{user_id}/aplicaciones` | Ver historial de aplicaciones del usuario | 🔄 En desarrollo |
 
 ### 📋 Roadmap de Funcionalidades
 
@@ -136,13 +131,7 @@ Los siguientes endpoints están siendo desarrollados y estarán disponibles en f
 - [ ] Gestión de montos y requisitos
 - [ ] **Endpoints privados** protegidos por autenticación
 
-#### Fase 2 - Aplicaciones (Planificado)
-- [ ] Sistema de aplicación a becas
-- [ ] Tracking de estado de aplicaciones
-- [ ] Notificaciones automáticas
-- [ ] Historial de aplicaciones
-
-#### Fase 3 - Administración (Planificado)
+#### Fase 2 - Administración (Planificado)
 - [ ] Panel de administración
 - [ ] Gestión de usuarios
 - [ ] Reportes y estadísticas
@@ -255,7 +244,6 @@ BecasCGSU-Back/
 
 - **Endpoints de Becas**: Implementación de CRUD para gestión de becas
 - **Sistema de Filtros**: Desarrollo de filtros avanzados por categoría, monto, nivel académico
-- **Sistema de Aplicaciones**: Funcionalidad para que usuarios apliquen a becas
 - **Documentación**: Mejoras en la documentación de endpoints
 - **Testing**: Implementación de pruebas unitarias y de integración
 - **Performance**: Optimizaciones en consultas y respuestas de la API
@@ -317,8 +305,6 @@ Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
 - 🔄 **Endpoints protegidos** para gestión de becas
 - 🔄 Endpoint para obtener todas las becas
 - 🔄 Sistema de filtros para becas
-- 🔄 Endpoint para becas por usuario
-- 🔄 Gestión de aplicaciones a becas
 
 ### v1.2.0 (Planificado)
 - 📋 Panel de administración
